@@ -1,98 +1,67 @@
-# for networking
 import socket
-# for secure connection
 import ssl
 
-# create a socket
-# socket is 👉 a communication endpoint (a door) 
-# AF_INET → IPv4
-# SOCK_STREAM → TCP
-# it means: “Create a TCP communication endpoint using IPv4”
-client_socket= socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+from networking.packet import read_packet
+from networking.encryption import binary_to_text
 
-# create SSL context
-# Do we need to create a normal socket first?
-# YES because SSL does NOT replace socket, SSL wraps socket
-sslContext= ssl.create_default_context()
+HOST = "127.0.0.1"
+PORT = 5000
 
-# Disabled verification: No real certificate → skip verification
-sslContext.check_hostname = False
-sslContext.verify_mode = ssl.CERT_NONE
 
-# You must pass your socket into SSL
-# SSL does identity verification (like checking ID 🪪)
-# Even if you're using:
-# "127.0.0.1"
-# SSL still wants:
-# 👉 a hostname to verify against the certificate
-secure_socket= sslContext.wrap_socket(client_socket, server_hostname="127.0.0.1")
+def start_receiver():
 
-try: 
-    # connect to server
-    # host = IP address
-    # port = number (e.g., 5000)
-    secure_socket.connect(("127.0.0.1", 5000))
+    # create normal socket
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    # receive → print → receive → print → forever
-    # keep listening forever until connection is closed
-    while True:
-        # receive data
-        # 1024 = buffer size (how much data you read at once)
-        data= secure_socket.recv(1024)
-        # When server closes connection:
-        # return: b'' (empty bytes)
+    # create SSL context
+    context = ssl.create_default_context()
 
-        # if server stops, or connection closes. program will break
-        # if no data -> stop loop
-        if not data:
-            break
+    # disable verification (for local testing)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
 
-        # decode data
-        # Data comes as bytes, not text.
-        message= data.decode()
+    # wrap socket with SSL
+    secure_socket = context.wrap_socket(
+        client_socket,
+        server_hostname="127.0.0.1"
+    )
 
-        # print message
-        print(message)
+    try:
+        # connect to server
+        secure_socket.connect((HOST, PORT))
+        print("Connected to secure server")
 
-except Exception as e:
-    print("Error: ", e)
+        # send username (IMPORTANT for server)
+        username = input("Enter your username: ")
+        secure_socket.sendall(username.encode())
 
-# try:
-#     # risky code
-# except:
-#     # handle error
-# finally:
-#     # ALWAYS runs
-finally:
-    secure_socket.close()
+        print("Listening for messages...\n")
 
-# 1. import
-# 2. define host + port
-# 3. create socket
-# 4. wrap socket with SSL
-# 5. connect
-# 6. receive
-# 7. decode
-# 8. print
+        while True:
 
-# Understand SSL (simple explanation)
-# Right now your connection is like:
-# Client  -----------  Server
-#         (plain text)
+            data = secure_socket.recv(4096)
 
-# With SSL:
-# Client  =====🔒=====  Server
-#         (encrypted)
+            if not data:
+                break
 
-# 🧠 Key idea
-# We don’t replace the socket
-# 👉 we wrap it
+            # decode packet
+            packet = read_packet(data.decode())
 
-# Concept
-# normal socket → SSL context → secure socket
+            print("\n📩 Message received from:", packet["sender"])
 
-# ⚠️ VERY IMPORTANT (this will save you hours later)
-# When using:
-# ssl.create_default_context()
-# 👉 Python expects:
-# a valid SSL certificate from server
+            print("Encrypted:", packet["message"])
+
+            # decrypt message
+            decrypted = binary_to_text(packet["message"])
+            print("Decrypted:", decrypted)
+
+    except Exception as e:
+        print("Error:", e)
+
+    finally:
+        secure_socket.close()
+        print("Connection closed")
+
+
+if __name__ == "__main__":
+    start_receiver()

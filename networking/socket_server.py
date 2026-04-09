@@ -1,130 +1,83 @@
 import socket
-
 import threading
-
-# this imports SSL/TLS encryption for secure communication between the server and clients
 import ssl
 
 from networking.client_manager import add_client
-
 from networking.packet import read_packet
-
 from networking.router import route_message
-
 from networking.encryption import binary_to_text
 
-HOST="0.0.0.0"
 
-PORT=5000
+HOST = "127.0.0.1"
+PORT = 5000
 
-def handle_client(client, addr):
 
-    print("New connection from " + str(addr))
+def handle_client(conn, addr):
 
-    username = client.recv(1024).decode()
+    print("🔌 New connection from", addr)
 
-    add_client(
-        username, 
-        client, 
-        addr[0], 
-        addr[1])
-    
-    while True:
+    try:
+        # receive username first
+        username = conn.recv(1024).decode()
+        add_client(username, conn)
 
-        try:
+        print(f"👤 User registered: {username}")
 
-            data = client.recv(4096)
+        while True:
+
+            data = conn.recv(4096)
 
             if not data:
-
                 break
 
-            packet = read_packet(
-                
-                data.decode()
-                
-            )
+            # parse packet
+            packet = read_packet(data.decode())
 
-            message_binary = packet["message"]
+            print("\n📦 Packet received")
 
-            message = binary_to_text(message_binary)
+            print("From:", packet["sender"])
+            print("To:", packet["receiver"])
+            print("IP:", packet["ip"])
+            print("MAC:", packet["mac"])
 
-            print("Packet received")
+            print("Encrypted:", packet["message"])
 
-            print("Sender IP: ", packet["ip"])
+            # decrypt message
+            message = binary_to_text(packet["message"])
+            print("Decrypted:", message)
 
-            print("Sender MAC: ", packet["mac"])
+            # route message
+            route_message(packet)
 
-            print("Encrypted: ", message_binary)
+    except Exception as e:
+        print("⚠️ Error handling client:", e)
 
-            print("Decrypted: ", message)
+    finally:
+        conn.close()
+        print("❌ Connection closed:", addr)
 
-            route_message(
-
-                packet["receiver"], 
-                
-                data.decode()
-                
-                )
-            
-        except:
-
-            break
-
-    client.close()
 
 def start_server():
 
-    server = socket.socket(
+    # create socket
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind((HOST, PORT))
+    server_socket.listen(5)
 
-        socket.AF_INET,
+    # SSL setup
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(certfile="cert.pem", keyfile="key.pem")
 
-        socket.SOCK_STREAM
+    secure_server = context.wrap_socket(server_socket, server_side=True)
 
-    )
-
-# this creates an SSL context for the server and loads the certificate and key files for encryption
-    context = ssl.create_default_context(
-        
-        ssl.Purpose.CLIENT_AUTH
-        
-        )
-    
-    # this creates the SSL context for the server and loads the certificate and key files for encryption
-    
-    context.load_cert_chain(
-
-    certfile="cert.pem", 
-    
-    keyfile="key.pem"
-
-    )
-
-    # this wraps the TCP server socket with SSL encryption
-
-    server = context.wrap_socket(
-        
-        server, 
-        
-        server_side=True)
-
-    server.bind((HOST, PORT))
-
-    server.listen()
-
-    print("Ringer socket server running on " + HOST + ":" + str(PORT))
+    print("🔒 Secure Ringer Server running on port", PORT)
 
     while True:
-
-        client, addr = server.accept()
+        conn, addr = secure_server.accept()
 
         thread = threading.Thread(
-            
-            target=handle_client, 
-            
-            args=(client, addr)
-            
-            )
+            target=handle_client,
+            args=(conn, addr)
+        )
 
         thread.start()
-    
