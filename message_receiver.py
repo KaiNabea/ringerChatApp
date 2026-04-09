@@ -57,6 +57,14 @@ try:
 except Exception as e:
     print("Error: ", e)
 
+# try:
+#     # risky code
+# except:
+#     # handle error
+# finally:
+#     # ALWAYS runs
+finally:
+    secure_socket.close()
 
 # 1. import
 # 2. define host + port
