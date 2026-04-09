@@ -2,10 +2,11 @@ import socket
 import threading
 import ssl
 
-from networking.client_manager import add_client
+from networking.client_manager import add_client, remove_client
 from networking.packet import read_packet
 from networking.router import route_message
 from networking.encryption import binary_to_text
+
 
 
 HOST = "127.0.0.1"
@@ -16,10 +17,13 @@ def handle_client(conn, addr):
 
     print("🔌 New connection from", addr)
 
+    username = None
+
     try:
         # receive username first
         username = conn.recv(1024).decode()
-        add_client(username, conn)
+        ip, port = addr
+        add_client(username, conn, ip, port)
 
         print(f"👤 User registered: {username}")
 
@@ -47,12 +51,13 @@ def handle_client(conn, addr):
             print("Decrypted:", message)
 
             # route message
-            route_message(packet)
+            route_message(packet["receiver"], message)
 
     except Exception as e:
         print("⚠️ Error handling client:", e)
 
     finally:
+        remove_client(username)
         conn.close()
         print("❌ Connection closed:", addr)
 

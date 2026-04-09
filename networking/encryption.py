@@ -14,10 +14,11 @@ def binary_to_text(binary):
     return ''.join(chr(int(b,2)) for b in chars)
 
 # test execution
-msg = "Hello"
+if __name__ == "__main__":
+    msg = "Hello"
 
-b = text_to_binary(msg)
+    b = text_to_binary(msg)
 
-print(b)
+    print(b)
 
-print(binary_to_text(b))
+    print(binary_to_text(b))
