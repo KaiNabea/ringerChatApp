@@ -2,6 +2,7 @@ import socket
 
 import threading
 
+# this imports SSL/TLS encryption for secure communication between the server and clients
 import ssl
 
 from networking.client_manager import add_client
@@ -40,7 +41,7 @@ def handle_client(client, addr):
 
             packet = read_packet(
                 
-                data.decodes()
+                data.decode()
                 
             )
 
@@ -70,7 +71,7 @@ def handle_client(client, addr):
 
             break
 
-        client.close()
+    client.close()
 
 def start_server():
 
@@ -82,11 +83,14 @@ def start_server():
 
     )
 
+# this creates an SSL context for the server and loads the certificate and key files for encryption
     context = ssl.create_default_context(
         
         ssl.Purpose.CLIENT_AUTH
         
         )
+    
+    # this creates the SSL context for the server and loads the certificate and key files for encryption
     
     context.load_cert_chain(
 
@@ -95,6 +99,8 @@ def start_server():
     keyfile="key.pem"
 
     )
+
+    # this wraps the TCP server socket with SSL encryption
 
     server = context.wrap_socket(
         
