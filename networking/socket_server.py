@@ -7,15 +7,12 @@ from networking.packet import read_packet
 from networking.router import route_message
 from networking.encryption import binary_to_text
 
-
-
 HOST = "127.0.0.1"
 PORT = 5000
 
-
 def handle_client(conn, addr):
 
-    print("🔌 New connection from", addr)
+    print("New connection from", addr)
 
     username = None
 
@@ -25,7 +22,7 @@ def handle_client(conn, addr):
         ip, port = addr
         add_client(username, conn, ip, port)
 
-        print(f"👤 User registered: {username}")
+        print(f"User registered: {username}")
 
         while True:
 
@@ -37,7 +34,7 @@ def handle_client(conn, addr):
             # parse packet
             packet = read_packet(data.decode())
 
-            print("\n📦 Packet received")
+            print("\nPacket received")
 
             print("From:", packet["sender"])
             print("To:", packet["receiver"])
@@ -54,12 +51,12 @@ def handle_client(conn, addr):
             route_message(packet["receiver"], message)
 
     except Exception as e:
-        print("⚠️ Error handling client:", e)
+        print("Error handling client:", e)
 
     finally:
         remove_client(username)
         conn.close()
-        print("❌ Connection closed:", addr)
+        print("Connection closed:", addr)
 
 
 def start_server():
@@ -75,7 +72,7 @@ def start_server():
 
     secure_server = context.wrap_socket(server_socket, server_side=True)
 
-    print("🔒 Secure Ringer Server running on port", PORT)
+    print("Secure Ringer Server running on port", PORT)
 
     while True:
         conn, addr = secure_server.accept()
