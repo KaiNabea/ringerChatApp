@@ -47,7 +47,7 @@ def start_receiver():
             # decode packet
             packet = read_packet(data.decode())
 
-            print("\n📩 Message received from:", packet["sender"])
+            print("\n Message received from:", packet["sender"])
 
             print("Encrypted:", packet["message"])
 
@@ -60,7 +60,6 @@ def start_receiver():
 
     finally:
         secure_socket.close()
-        print("Connection closed")
 
 
 if __name__ == "__main__":

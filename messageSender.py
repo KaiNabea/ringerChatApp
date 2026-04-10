@@ -38,7 +38,7 @@ def receive_messages(sock):
 
             print("Encrypted:", packet["message"])
 
-            # ✅ Decrypt message
+            # Decrypt message
             decrypted = binary_to_text(packet["message"])
             print("Decrypted:", decrypted)
 
@@ -76,7 +76,6 @@ def send_message(sock):
             sock.sendall(packet.encode())
 
         except:
-            print("Connection closed")
             break
 
 
