@@ -41,6 +41,7 @@ def receive_messages(sock):
             # ✅ Decrypt message
             decrypted = binary_to_text(packet["message"])
             print("Decrypted:", decrypted)
+            print("> ", end="", flush=True)
 
         except:
             print("Connection closed")

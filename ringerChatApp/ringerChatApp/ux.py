@@ -1,12 +1,19 @@
+# ringerChatApp/ux.py
 import socket
 import ssl
 import threading
 import tkinter as tk
 from tkinter import scrolledtext, messagebox
 import json
+import os
+import sys
 
-from ringerChatApp.networking.packet import create_packet, read_packet
-from ringerChatApp.networking.encryption import text_to_binary, binary_to_text
+# Fix imports - add parent directory to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Now imports work from root
+from networking.packet import create_packet, read_packet
+from networking.encryption import text_to_binary, binary_to_text
 
 
 # ── Packet helper ─────────────────────────────────────────────────────────────
@@ -41,39 +48,50 @@ class ChatConnection:
         self._on_error   = on_error
 
     def connect(self):
-        raw = socket.create_connection((self.host, self.port), timeout=10)
-
-        context = ssl.create_default_context()
-        if self.ca_cert:
-            context.load_verify_locations(self.ca_cert)
-        else:
-            # dev/self-signed: disable hostname + cert verification
-            context.check_hostname = False
-            context.verify_mode    = ssl.CERT_NONE
-
-        self.sock = context.wrap_socket(raw, server_hostname=self.host)
-
-        # handshake: send username first, matching server's client.recv(1024)
-        self.sock.sendall(self.username.encode())
-
-        # start background receive thread
-        t = threading.Thread(target=self._receive_loop, daemon=True)
-        t.start()
+        try:
+            raw = socket.create_connection((self.host, self.port), timeout=10)
+            
+            context = ssl.create_default_context()
+            if self.ca_cert and os.path.exists(self.ca_cert):
+                context.load_verify_locations(self.ca_cert)
+            else:
+                # dev/self-signed: disable hostname + cert verification
+                context.check_hostname = False
+                context.verify_mode    = ssl.CERT_NONE
+            
+            self.sock = context.wrap_socket(raw, server_hostname=self.host)
+            
+            # Send username first
+            self.sock.sendall(self.username.encode())
+            
+            # Start background receive thread
+            t = threading.Thread(target=self._receive_loop, daemon=True)
+            t.start()
+            return True
+            
+        except ConnectionRefusedError:
+            raise Exception(f"Cannot connect to {self.host}:{self.port} - Server not running")
+        except Exception as e:
+            raise Exception(f"Connection failed: {e}")
 
     def send(self, receiver: str, message: str):
         if not self.sock:
             return
-        local_ip, local_port = self.sock.getsockname()
-        local_mac = "00:00:00:00:00:00"   # replace with getmac if available
-        packet = build_packet(
-            sender=self.username,
-            sender_ip=local_ip,
-            sender_mac=local_mac,
-            receiver=receiver,
-            port=local_port,
-            message=message,
-        )
-        self.sock.sendall(packet.encode())
+        try:
+            local_ip, local_port = self.sock.getsockname()
+            local_mac = "00:00:00:00:00:00"   # Replace with getmac if needed
+            packet = build_packet(
+                sender=self.username,
+                sender_ip=local_ip,
+                sender_mac=local_mac,
+                receiver=receiver,
+                port=local_port,
+                message=message,
+            )
+            self.sock.sendall(packet.encode())
+        except Exception as e:
+            if self._on_error:
+                self._on_error(str(e))
 
     def disconnect(self):
         if self.sock:
@@ -84,12 +102,13 @@ class ChatConnection:
             self.sock = None
 
     def _receive_loop(self):
-        while True:
+        while self.sock:
             try:
                 data = self.sock.recv(4096)
                 if not data:
                     break
                 if self._on_message:
+                    # The callback will schedule on main thread
                     self._on_message(data.decode())
             except Exception as e:
                 if self._on_error:
@@ -272,7 +291,8 @@ class ChatScreen(tk.Frame):
             sender  = packet.get("sender", packet.get("ip", "unknown"))
             message = binary_to_text(packet["message"])
             self._append(f"{sender}: {message}", "them")
-        except Exception:
+        except Exception as e:
+            self._append(f"Error parsing message: {e}", "system")
             self._append(raw, "them")
 
     def _handle_error(self, error: str):
