@@ -2,10 +2,10 @@ import socket
 import threading
 import ssl
 
-from networking.client_manager import add_client, remove_client
-from networking.packet import read_packet
-from networking.router import route_message
-from networking.encryption import binary_to_text
+from ringerChatApp.networking.client_manager import add_client, remove_client
+from ringerChatApp.networking.packet import read_packet
+from ringerChatApp.networking.router import route_message
+from ringerChatApp.networking.encryption import binary_to_text
 
 
 

@@ -5,8 +5,8 @@ import tkinter as tk
 from tkinter import scrolledtext, messagebox
 import json
 
-from networking.packet import create_packet, read_packet
-from networking.encryption import text_to_binary, binary_to_text
+from ringerChatApp.networking.packet import create_packet, read_packet
+from ringerChatApp.networking.encryption import text_to_binary, binary_to_text
 
 
 # ── Packet helper ─────────────────────────────────────────────────────────────

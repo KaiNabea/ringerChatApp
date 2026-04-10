@@ -5,8 +5,8 @@ import sys
 import ssl
 
 #import encryption and packet files from module
-from networking.encryption import text_to_binary, binary_to_text
-from networking.packet import create_packet, read_packet
+from ringerChatApp.networking.encryption import text_to_binary, binary_to_text
+from ringerChatApp.networking.packet import create_packet, read_packet
 
 # HOST and PORT numbers to connect the client to the server
 # HOST and PORT numbers to connect the client to the server

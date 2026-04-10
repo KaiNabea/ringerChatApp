@@ -1,5 +1,5 @@
 # this gets the client manager to get the client for the current request
-from networking.client_manager import get_client
+from ringerChatApp.networking.client_manager import get_client
 
 # this function takes the receiver and the message as parameters and routes the message to the correct client based on the receiver's username
 def route_message(receiver, message):

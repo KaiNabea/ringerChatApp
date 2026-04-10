@@ -1,8 +1,8 @@
 import socket
 import ssl
 
-from networking.packet import read_packet
-from networking.encryption import binary_to_text
+from ringerChatApp.networking.packet import read_packet
+from ringerChatApp.networking.encryption import binary_to_text
 
 HOST = "127.0.0.1"
 PORT = 5000
